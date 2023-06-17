@@ -8,13 +8,13 @@ import (
 	"github.com/webstradev/blockstra/proto"
 )
 
-// SignBlock
-func SignBlock(pk *crypto.PrivateKey, b *proto.Block) *crypto.Signature {
-	return pk.Sign(HashBlock(b))
+// SignBlock hashes and then signs a blocks or panics if fialing to hash
+func MustSignBlock(pk *crypto.PrivateKey, b *proto.Block) *crypto.Signature {
+	return pk.Sign(MustHashBlock(b))
 }
 
-// HasBlock returns a SHA256 of the header
-func HashBlock(block *proto.Block) []byte {
+// MustHashBlock returns a SHA256 of the header or panics if encountering an error
+func MustHashBlock(block *proto.Block) []byte {
 	b, err := pb.Marshal(block)
 	if err != nil {
 		panic(err)
