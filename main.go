@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net"
 	"time"
 
 	"github.com/webstradev/blockstra/node"
@@ -15,18 +13,6 @@ import (
 
 func main() {
 	node := node.New("blockstra-0.1")
-
-	opts := []grpc.ServerOption{}
-	grpcServer := grpc.NewServer(opts...)
-
-	ln, err := net.Listen("tcp", ":3000")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	proto.RegisterNodeServer(grpcServer, node)
-	fmt.Println("node running on: ", ":3000")
-
 	go func() {
 		for {
 			time.Sleep(2 * time.Second)
@@ -34,7 +20,8 @@ func main() {
 		}
 	}()
 
-	grpcServer.Serve(ln)
+	log.Fatal(node.Start(":3000"))
+
 }
 
 func makeTransaction() {
