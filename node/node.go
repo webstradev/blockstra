@@ -2,12 +2,11 @@ package node
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"net"
 	"sync"
 
 	"github.com/webstradev/blockstra/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
@@ -16,6 +15,7 @@ import (
 type Node struct {
 	version    string
 	listenAddr string
+	logger     *zap.SugaredLogger
 
 	peerLock sync.RWMutex
 	peers    map[proto.NodeClient]*proto.Version
@@ -23,10 +23,11 @@ type Node struct {
 	proto.UnimplementedNodeServer
 }
 
-func New(version, listenAddr string) *Node {
+func New(version, listenAddr string, logger *zap.SugaredLogger) *Node {
 	return &Node{
 		version:    version,
 		listenAddr: listenAddr,
+		logger:     logger.With("source", listenAddr),
 
 		peers: map[proto.NodeClient]*proto.Version{},
 	}
@@ -36,7 +37,8 @@ func (n *Node) addPeer(c proto.NodeClient, v *proto.Version) {
 	n.peerLock.Lock()
 	defer n.peerLock.Unlock()
 
-	fmt.Printf("[%s] new peer connected (%s) - height (%d)\n", n.listenAddr, v.ListenAddr, v.Height)
+	n.logger.Debugw("new peer connected", "addr", v.ListenAddr)
+
 	n.peers[c] = v
 }
 
@@ -55,7 +57,7 @@ func (n *Node) BootstrapNetwork(addrs []string) error {
 
 		v, err := c.Handshake(context.Background(), n.getVersion())
 		if err != nil {
-			fmt.Println("handshake error: ", err)
+			n.logger.Error("handshake error: ", err)
 			continue
 		}
 
@@ -67,15 +69,19 @@ func (n *Node) BootstrapNetwork(addrs []string) error {
 
 func (n *Node) Start() error {
 
-	opts := []grpc.ServerOption{}
-	grpcServer := grpc.NewServer(opts...)
+	var (
+		opts       = []grpc.ServerOption{}
+		grpcServer = grpc.NewServer(opts...)
+	)
 
 	ln, err := net.Listen("tcp", n.listenAddr)
 	if err != nil {
-		log.Fatal(err)
+		n.logger.Fatal(err)
 	}
 
 	proto.RegisterNodeServer(grpcServer, n)
+
+	n.logger.Infow("Node Started", "port", n.listenAddr)
 
 	return grpcServer.Serve(ln)
 }
@@ -83,7 +89,7 @@ func (n *Node) Start() error {
 func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*proto.Ack, error) {
 	peer, _ := peer.FromContext(ctx)
 
-	fmt.Println("received tx from: ", peer.Addr)
+	n.logger.Debug("received tx from: ", peer.Addr)
 	return &proto.Ack{}, nil
 }
 

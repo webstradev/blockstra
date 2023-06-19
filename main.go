@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/webstradev/blockstra/node"
 	"github.com/webstradev/blockstra/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -14,13 +16,21 @@ const vers = "blockstra-0.1"
 
 func main() {
 	makeNode(":3000", []string{})
+	time.Sleep(10 * time.Millisecond) // Introducing a sleep to make sure 300 starts before 4000
 	makeNode(":4000", []string{":3000"})
 
 	select {}
 }
 
 func makeNode(listenAddr string, bootstrapNodes []string) *node.Node {
-	n := node.New(vers, listenAddr)
+	loggerConfig := zap.NewDevelopmentConfig()
+	loggerConfig.EncoderConfig.TimeKey = "timestamp"
+
+	zap, err := loggerConfig.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+	n := node.New(vers, listenAddr, zap.Sugar())
 	go n.Start()
 	if len(bootstrapNodes) > 0 {
 		if err := n.BootstrapNetwork(bootstrapNodes); err != nil {
