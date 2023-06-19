@@ -16,9 +16,9 @@ const vers = "blockstra-0.1"
 
 func main() {
 	makeNode(":3000", []string{})
-	time.Sleep(10 * time.Millisecond) // Introducing a sleep to make sure 3000 starts before 4000
+	time.Sleep(50 * time.Millisecond)
 	makeNode(":4000", []string{":3000"})
-	time.Sleep(2 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 	makeNode(":5000", []string{":4000"})
 
 	select {}
