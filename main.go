@@ -16,8 +16,10 @@ const vers = "blockstra-0.1"
 
 func main() {
 	makeNode(":3000", []string{})
-	time.Sleep(10 * time.Millisecond) // Introducing a sleep to make sure 300 starts before 4000
+	time.Sleep(10 * time.Millisecond) // Introducing a sleep to make sure 3000 starts before 4000
 	makeNode(":4000", []string{":3000"})
+	time.Sleep(2 * time.Second)
+	makeNode(":5000", []string{":4000"})
 
 	select {}
 }
@@ -30,13 +32,8 @@ func makeNode(listenAddr string, bootstrapNodes []string) *node.Node {
 	if err != nil {
 		log.Fatal(err)
 	}
-	n := node.New(vers, listenAddr, zap.Sugar())
+	n := node.New(vers, listenAddr, zap.Sugar(), bootstrapNodes)
 	go n.Start()
-	if len(bootstrapNodes) > 0 {
-		if err := n.BootstrapNetwork(bootstrapNodes); err != nil {
-			log.Fatal(err)
-		}
-	}
 	return n
 }
 
