@@ -15,7 +15,12 @@ func MustSignBlock(pk *crypto.PrivateKey, b *proto.Block) *crypto.Signature {
 
 // MustHashBlock returns a SHA256 of the header or panics if encountering an error
 func MustHashBlock(block *proto.Block) []byte {
-	b, err := pb.Marshal(block)
+	return MustHashHeader(block.Header)
+}
+
+// MustHashHeader returns a SHA256 of the header or panics if encountering an error
+func MustHashHeader(header *proto.Header) []byte {
+	b, err := pb.Marshal(header)
 	if err != nil {
 		panic(err)
 	}
